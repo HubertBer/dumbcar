@@ -74,14 +74,14 @@ make_neural :: proc(net_size: [$N]u32) -> Neural(N) {
 }
 
 
-delete_neural :: proc(ptr: ^Neural) {
+delete_neural :: proc(ptr: ^Neural($N)) {
     delete(ptr.weights)
     delete(ptr.nodes)
     delete(ptr.layers)
     free(ptr)
 }
 
-random_weights :: proc(ptr: ^Neural) {
+random_weights :: proc(ptr: ^Neural($N)) {
     for i := 0; i < len(ptr.weights); i+=1 {
         ptr.weights[i] = rand.float64_uniform(-1,1)
     }
@@ -108,17 +108,16 @@ compute_layer :: proc(ptr: ^Layer) {
 }
 
 
-compute :: proc(ptr: ^Neural, input: []f64) {
+compute :: proc(ptr: Neural($N), input: []f64) -> (f32, f32){
     using ptr
     for &node, i in ptr.layers[0].nodes {
         node.eval = input[i]
     }
     
-
     for &layer in ptr.layers[1:] {
         compute_layer(&layer)
     }
 
-
+    return f32(nodes[N - 2].eval), f32(nodes[N - 1].eval) 
 }
 
