@@ -29,15 +29,15 @@ Layer :: struct {
 }
 
 
-Neural :: struct {
-    net_size: []u32,
+Neural :: struct($N : int){
+    net_size: [N]u32,
     layers: []Layer,
     
     weights: []f64,
     nodes: []Node
 }
 
-make_neural :: proc(net_size: []u32) -> ^Neural {
+make_neural :: proc(net_size: [$N]u32) -> Neural(N) {
     nodes_num: u32 = net_size[0]
     edges: u32 = 0
     for i := 1; i < len(net_size); i+=1 {
@@ -46,7 +46,7 @@ make_neural :: proc(net_size: []u32) -> ^Neural {
     } 
     
     w_size := edges
-    ptr := new(Neural)
+    ptr : Neural(N)
     ptr.weights = make([]f64, w_size)
     ptr.net_size = net_size
     nodes := make([]Node, nodes_num)
@@ -62,8 +62,8 @@ make_neural :: proc(net_size: []u32) -> ^Neural {
         indices += net_size[i-1]
         for j:u32 = 0; j < net_size[i]; j+=1 {
             curr := indices + j
-            nodes[curr].edges = ptr.weights[indices - net_size[i-1]:indices]
-            nodes[curr].nodes = ptr.nodes[edges_id : edges_id + net_size[i-1]]
+            nodes[curr].edges = ptr.weights[edges_id : edges_id + net_size[i-1]]
+            nodes[curr].nodes = ptr.nodes[indices - net_size[i-1]:indices]
 
             edges_id += net_size[i-1]
         }
@@ -74,14 +74,14 @@ make_neural :: proc(net_size: []u32) -> ^Neural {
 }
 
 
-delete_neural :: proc(ptr: ^Neural) {
+delete_neural :: proc(ptr: ^Neural($N)) {
     delete(ptr.weights)
     delete(ptr.nodes)
     delete(ptr.layers)
     free(ptr)
 }
 
-random_weights :: proc(ptr: ^Neural) {
+random_weights :: proc(ptr: ^Neural($N)) {
     for i := 0; i < len(ptr.weights); i+=1 {
         ptr.weights[i] = rand.float64_uniform(-1,1)
     }
@@ -108,17 +108,16 @@ compute_layer :: proc(ptr: ^Layer) {
 }
 
 
-compute :: proc(ptr: ^Neural, input: []f64) {
+compute :: proc(ptr: Neural($N), input: []f64) -> (f32, f32){
     using ptr
     for &node, i in ptr.layers[0].nodes {
         node.eval = input[i]
     }
     
-
     for &layer in ptr.layers[1:] {
         compute_layer(&layer)
     }
 
-
+    return f32(nodes[N - 2].eval), f32(nodes[N - 1].eval) 
 }
 
