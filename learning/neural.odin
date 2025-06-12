@@ -13,7 +13,13 @@ sigmoid :: proc(x : f64) -> f64 {
     return 1 / (1 + math.exp(-x))
 }
 
-activation :: sigmoid
+tanh :: proc(x: f64) -> f64 {
+    return math.tanh(x)
+}
+
+activation :: tanh
+
+// activation :: sigmoid
 
 // [from, to)
 Ival :: struct {
@@ -57,20 +63,21 @@ make_neural :: proc(net_size: [$N]u32) -> Neural(N) {
     ptr.nodes = nodes
     ptr.layers = make([]Layer, len(net_size))
     
-    indices: u32 = 0
+    indices: u32 = net_size[0]
     edges_id: u32 = 0
     ptr.layers[0].nodes = nodes[:net_size[0]]
 
-    for i := 1; i< len(net_size); i+=1 {
-        ptr.layers[i].nodes = nodes[indices:indices+net_size[i-1]]
-        indices += net_size[i-1]
-        for j:u32 = 0; j < net_size[i]; j+=1 {
-            curr := indices + j
+    for i := 1; i < len(net_size); i+=1 {
+        prev_start := indices - net_size[i-1]
+        curr_start := indices
+        ptr.layers[i].nodes = nodes[curr_start : curr_start + net_size[i]]
+        for j: u32 = 0; j < net_size[i]; j+=1 {
+            curr := curr_start + j
             nodes[curr].edges = ptr.weights[edges_id : edges_id + net_size[i-1]]
-            nodes[curr].nodes = ptr.nodes[indices - net_size[i-1]:indices]
-
+            nodes[curr].nodes = ptr.nodes[prev_start : prev_start + net_size[i-1]]
             edges_id += net_size[i-1]
         }
+        indices += net_size[i]
     }
 
     
@@ -122,7 +129,8 @@ compute :: proc(ptr: Neural($N), input: []f64) -> (f32, f32){
         compute_layer(&layer)
     }
 
-    return f32(nodes[N - 2].eval), f32(nodes[N - 1].eval) 
+    out_nodes := ptr.layers[len(ptr.layers)-1].nodes
+    return f32(out_nodes[0].eval), f32(out_nodes[1].eval)
 }
 
 average_neural :: proc(out : ^Neural($N),  in0, in1 : Neural(N)) {

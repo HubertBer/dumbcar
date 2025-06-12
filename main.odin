@@ -7,22 +7,22 @@ import "core:math"
 import "core:math/rand"
 
 MAX_SPEED :: 500
-ACC :: 5000.0
+ACC :: 1000.0
 
 // IN DEGREES 
-ROTATION_SPEED :: 180.0
+ROTATION_SPEED :: 500.0
 PHYSICS_DT :: 1.0/60.0
 CAR_WIDTH :: 10.0
 CAR_LENGTH :: 30.0
-TRACK_WIDTH :: 50
+TRACK_WIDTH :: 100
 
 SHOW_SPEED :: 0.1
 
 // SIMULATION CONSTANTS
-SIM_DURATION :: 4
+SIM_DURATION :: 8
 
 // RAY CONSTANTS
-MAX_RAY_LEN :: 300.0
+MAX_RAY_LEN :: 200.0
 RAY_ANGLES :: [5]f32{90, 45, 0, -45, -90}
 
 // RAYS STUFF
@@ -237,6 +237,21 @@ Map :: struct($N : int){
     points : [N]rl.Vector2
 }
 
+DECA_MAP :: Map(10){
+    [10]rl.Vector2{
+        rl.Vector2{700.0, 400.0},
+        rl.Vector2{642.7, 576.3},
+        rl.Vector2{509.0, 690.2},
+        rl.Vector2{340.0, 726.6},
+        rl.Vector2{184.5, 676.3},
+        rl.Vector2{100.0, 550.0},
+        rl.Vector2{100.0, 400.0},
+        rl.Vector2{157.3, 223.7},
+        rl.Vector2{291.0, 109.8},
+        rl.Vector2{460.0, 73.4},
+    }
+}
+
 HEX_MAP :: Map(6){
     [6]rl.Vector2{
         rl.Vector2{473.2, 200.0},
@@ -279,6 +294,8 @@ ZIGZAG_MAP :: Map(23){
     }
 }
 
+THE_MAP :: DECA_MAP
+MAP_SIZE :: 10
 
 Car :: struct {
     pos : rl.Vector2,
@@ -298,7 +315,7 @@ test :: proc(arr : ^[10]f32) {
 
 Simulation :: struct($N : u32) {
     cars : [N]Car,
-    track : Map(23), 
+    track : Map(MAP_SIZE), 
 }
 
 carRect :: proc(car : Car) -> rl.Rectangle {
@@ -357,7 +374,7 @@ simulation_simple :: proc() -> Simulation(1) {
     return Simulation(1){
         [1]Car{
             Car{
-                ZIGZAG_MAP.points[0],
+                THE_MAP.points[0],
                 0,
                 // -120,
                 110,
@@ -368,7 +385,7 @@ simulation_simple :: proc() -> Simulation(1) {
                 0
             }
         },
-        ZIGZAG_MAP
+        THE_MAP
     }
 }
 
@@ -394,7 +411,8 @@ simulation_step :: proc(sim : ^Simulation($N)) {
         }
 
         forward := rl.Vector2Rotate(rl.Vector2{1, 0}, car.rotation * rl.DEG2RAD)
-        car.pos += forward * car.speed * PHYSICS_DT * SHOW_SPEED
+        car.pos += forward * car.speed * PHYSICS_DT
+        // car.pos += forward * MAX_SPEED * PHYSICS_DT
     }
 
     mark_dead(sim)
@@ -428,9 +446,9 @@ user_input :: proc(sim : ^Simulation($N)) {
 }
 
 simulation_draw :: proc(sim : ^Simulation($N)) {
-    for i in 1..<24 {
+    for i in 1..<(MAP_SIZE + 1) {
         p0 := sim.track.points[i - 1]
-        p1 := sim.track.points[i % 23]
+        p1 := sim.track.points[i % MAP_SIZE]
 
         rl.DrawLineEx(p0, p1, TRACK_WIDTH, rl.BLACK)
         rl.DrawCircleV(p0, TRACK_WIDTH / 2, rl.BLACK)
@@ -460,16 +478,16 @@ simulation_draw :: proc(sim : ^Simulation($N)) {
 
 }
 
-car_logic :: proc(sim : ^Simulation($N), logic : learning.Neural($M)) {
+car_logic :: proc(sim : ^Simulation($N), logic : learning.Neural($M)) -> (dv, dr : f32){
     for i in 0..<N {
         ray_inputs, _, _ := raycast_input(sim.cars[i], sim.track)
         input := [6]f64{}
         for j in 0..<5 {
-            input[j] = ray_inputs[j] / MAX_RAY_LEN
+            input[j] = ray_inputs[j]
         }
         input[5] = f64(sim.cars[i].speed) / MAX_SPEED
 
-        dv, dr := learning.compute(logic, input[:])
+        dv, dr = learning.compute(logic, input[:])
 
         dv = clamp(dv, 0, 1) * 2 - 1
         dr = clamp(dr, 0, 1) * 2 - 1
@@ -477,14 +495,22 @@ car_logic :: proc(sim : ^Simulation($N), logic : learning.Neural($M)) {
         sim.cars[i].speed = clamp(sim.cars[i].speed, -MAX_SPEED, MAX_SPEED)
         sim.cars[i].rotation += dr * ROTATION_SPEED * PHYSICS_DT
     }
+    return
 }
 
 fast_simulation :: proc(sim : ^Simulation($N), logic : learning.Neural($M)) {
     physicsTime : f32 = 0.0
 
+    pdv, pdr : f32
     for physicsTime < SIM_DURATION  {
         physicsTime += PHYSICS_DT
-        car_logic(sim, logic)
+        dv, dr := car_logic(sim, logic)
+        if dv == pdv && dr == pdr {
+            fmt.printfln("SUS")
+        }
+        pdv = dv
+        pdr = dr
+
         simulation_step(sim)
         if sim.cars[0].dead {
             break
@@ -544,7 +570,13 @@ score :: proc(car : learning.Neural($N), vis : bool = false) -> f64 {
     ab := b - a
     ap := sim.cars[0].pos - a
     t := clamp(rl.Vector2DotProduct(ap, ab) / rl.Vector2LengthSqr(ab), -1, 1)
-    return f64(curr) + f64(t)
+    
+    ans := f64(curr) + f64(t)
+    ans = max(ans, 0)
+    if sim.cars[0].dead {
+        ans -= 3
+    }
+    return ans
     // return f64(sim.cars[0].p_now)
 }
 
@@ -575,7 +607,7 @@ show_best - jeśli true, w każdym kroku pokazujemy najlepszy run
 learn :: proc(
     $CARS: u32,
     steps: u32 = 100,
-    mut_rate: f64 = 5,
+    mut_rate: f64 = 0.1,
     mut_num: int = 5, 
     take_bests: int = 5,
     show_best: bool = false,
