@@ -294,8 +294,8 @@ ZIGZAG_MAP :: Map(23){
     }
 }
 
-THE_MAP :: DECA_MAP
-MAP_SIZE :: 10
+THE_MAP :: HEX_MAP
+MAP_SIZE :: 6
 
 Car :: struct {
     pos : rl.Vector2,
@@ -327,14 +327,28 @@ carRect :: proc(car : Car) -> rl.Rectangle {
     }
 }
 
-draw_car :: proc(car : Car) {
-    color := rl.BLUE
-    if !car.on_track {
-        color = rl.RED
-    } 
-    rl.DrawRectanglePro(carRect(car), rl.Vector2{CAR_LENGTH / 2, CAR_WIDTH / 2}, car.rotation, color)
-    rl.DrawCircleV(car.pos, 5, rl.BLACK)
+draw_car :: proc(car : Car, zubr_texture: rl.Texture2D) {
+    // Set the size you want for the car image
+    scale : f32 = 2.0 // Change as needed for desired size
+    dest := rl.Rectangle{
+        car.pos.x,
+        car.pos.y,
+        f32(zubr_texture.width) * scale,
+        f32(zubr_texture.height) * scale,
+    }
+    origin := rl.Vector2{f32(zubr_texture.width) * scale / 2, f32(zubr_texture.height) * scale / 2}
+    rl.DrawTexturePro(zubr_texture, rl.Rectangle{0, 0, f32(zubr_texture.width), f32(zubr_texture.height)}, dest, origin, car.rotation, rl.WHITE)
 }
+
+
+// draw_car :: proc(car : Car) {
+//     color := rl.BLUE
+//     if !car.on_track {
+//         color = rl.RED
+//     } 
+//     rl.DrawRectanglePro(carRect(car), rl.Vector2{CAR_LENGTH / 2, CAR_WIDTH / 2}, car.rotation, color)
+//     rl.DrawCircleV(car.pos, 5, rl.BLACK)
+// }
 
 car_on_track :: proc(car : Car, track : Map($N)) -> bool {
     for i in 1..<(N + 1) {
@@ -376,8 +390,8 @@ simulation_simple :: proc() -> Simulation(1) {
             Car{
                 THE_MAP.points[0],
                 0,
-                // -120,
-                110,
+                -120,
+                // 110,
                 // 0,
                 // 0,
                 false,
@@ -445,7 +459,7 @@ user_input :: proc(sim : ^Simulation($N)) {
     car.rotation += dr * ROTATION_SPEED * PHYSICS_DT
 }
 
-simulation_draw :: proc(sim : ^Simulation($N)) {
+simulation_draw :: proc(sim : ^Simulation($N), zubr_texture: rl.Texture2D) {
     for i in 1..<(MAP_SIZE + 1) {
         p0 := sim.track.points[i - 1]
         p1 := sim.track.points[i % MAP_SIZE]
@@ -455,7 +469,7 @@ simulation_draw :: proc(sim : ^Simulation($N)) {
     }
 
     for car in sim.cars {
-        draw_car(car)
+        draw_car(car, zubr_texture)
     }
 
 
@@ -521,6 +535,9 @@ fast_simulation :: proc(sim : ^Simulation($N), logic : learning.Neural($M)) {
 visual_simulation :: proc(sim : ^Simulation($N), logic : learning.Neural($M)) {
     rl.InitWindow(2560, 1440, "projekt")
     rl.SetTargetFPS(300)
+    
+    zubr_texture := rl.LoadTexture("zubr.png")
+    
 
     gameTime : f32 = 0.0
     physicsTime : f32 = 0.0
@@ -546,10 +563,12 @@ visual_simulation :: proc(sim : ^Simulation($N), logic : learning.Neural($M)) {
 
         rl.BeginDrawing()
         rl.ClearBackground(rl.WHITE)
-        simulation_draw(sim)
+        simulation_draw(sim, zubr_texture)
         rl.EndDrawing()
     }
     rl.CloseWindow()
+
+    rl.UnloadTexture(zubr_texture)
 }
 
 score :: proc(car : learning.Neural($N), vis : bool = false) -> f64 {
