@@ -9,7 +9,11 @@ relu :: proc(x: f64) -> f64 {
     return math.max(0, x)
 }
 
-activation :: relu
+sigmoid :: proc(x : f64) -> f64 {
+    return 1 / (1 + math.exp(-x))
+}
+
+activation :: sigmoid
 
 // [from, to)
 Ival :: struct {
@@ -74,11 +78,10 @@ make_neural :: proc(net_size: [$N]u32) -> Neural(N) {
 }
 
 
-delete_neural :: proc(ptr: ^Neural($N)) {
+delete_neural :: proc(ptr: Neural($N)) {
     delete(ptr.weights)
     delete(ptr.nodes)
     delete(ptr.layers)
-    free(ptr)
 }
 
 random_weights :: proc(ptr: ^Neural($N)) {
@@ -110,6 +113,7 @@ compute_layer :: proc(ptr: ^Layer) {
 
 compute :: proc(ptr: Neural($N), input: []f64) -> (f32, f32){
     using ptr
+
     for &node, i in ptr.layers[0].nodes {
         node.eval = input[i]
     }
@@ -121,3 +125,24 @@ compute :: proc(ptr: Neural($N), input: []f64) -> (f32, f32){
     return f32(nodes[N - 2].eval), f32(nodes[N - 1].eval) 
 }
 
+average_neural :: proc(out : ^Neural($N),  in0, in1 : Neural(N)) {
+    for i in 0..<len(out.weights) {
+        out.weights[i] = (in0.weights[i] + in1.weights[i]) / 2.0
+    }
+
+    for i in 0..<len(out.nodes) {
+        out.nodes[i].b = (in0.nodes[i].b + in1.nodes[i].b) / 2.0
+    }
+}
+
+mutate_neural :: proc(out : ^Neural($N),  in0 : Neural(N), mut_rate := 1.0) {
+    for i in 0..<len(out.weights) {
+        out.weights[i] = in0.weights[i]
+        out.weights[i] += rand.float64_uniform(-mut_rate, mut_rate)
+    }
+
+    for i in 0..<len(out.nodes) {
+        out.nodes[i].b = in0.nodes[i].b
+        out.nodes[i].b += rand.float64_uniform(-mut_rate, mut_rate)
+    }
+}
