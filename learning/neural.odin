@@ -1,0 +1,124 @@
+package learning
+
+import "core:math/rand"
+import "core:math"
+
+// import function for evaluation
+
+relu :: proc(x: f64) -> f64 {
+    return math.max(0, x)
+}
+
+activation :: relu
+
+// [from, to)
+Ival :: struct {
+    from: u32,
+    to: u32
+}
+
+Node :: struct {
+    edges: []f64,
+    nodes: []Node,
+    eval : f64,
+    b: f64
+}
+
+Layer :: struct {
+    nodes: []Node
+}
+
+
+Neural :: struct {
+    net_size: []u32,
+    layers: []Layer,
+    
+    weights: []f64,
+    nodes: []Node
+}
+
+make_neural :: proc(net_size: []u32) -> ^Neural {
+    nodes_num: u32 = net_size[0]
+    edges: u32 = 0
+    for i := 1; i < len(net_size); i+=1 {
+        edges += net_size[i-1]*net_size[i]
+        nodes_num += net_size[i]
+    } 
+    
+    w_size := edges
+    ptr := new(Neural)
+    ptr.weights = make([]f64, w_size)
+    ptr.net_size = net_size
+    nodes := make([]Node, nodes_num)
+    ptr.nodes = nodes
+    ptr.layers = make([]Layer, len(net_size))
+    
+    indices: u32 = 0
+    edges_id: u32 = 0
+    ptr.layers[0].nodes = nodes[:net_size[0]]
+
+    for i := 1; i< len(net_size); i+=1 {
+        ptr.layers[i].nodes = nodes[indices:indices+net_size[i-1]]
+        indices += net_size[i-1]
+        for j:u32 = 0; j < net_size[i]; j+=1 {
+            curr := indices + j
+            nodes[curr].edges = ptr.weights[indices - net_size[i-1]:indices]
+            nodes[curr].nodes = ptr.nodes[edges_id : edges_id + net_size[i-1]]
+
+            edges_id += net_size[i-1]
+        }
+    }
+
+    
+    return ptr
+}
+
+
+delete_neural :: proc(ptr: ^Neural) {
+    delete(ptr.weights)
+    delete(ptr.nodes)
+    delete(ptr.layers)
+    free(ptr)
+}
+
+random_weights :: proc(ptr: ^Neural) {
+    for i := 0; i < len(ptr.weights); i+=1 {
+        ptr.weights[i] = rand.float64_uniform(-1,1)
+    }
+
+    for i := 0; i < len(ptr.nodes); i+=1 {
+        ptr.nodes[i].b = rand.float64_uniform(-1, 1)
+    }
+}
+
+compute_node :: proc(node: ^Node) {
+    num : f64 = 0
+    for i: int = 0; i < len(node.edges); i+=1 {
+        num += node.edges[i] * node.nodes[i].eval
+    }
+
+    num += node.b
+    node.eval = activation(num)
+}
+
+compute_layer :: proc(ptr: ^Layer) {
+    for &node in ptr.nodes {
+        compute_node(&node)
+    }
+}
+
+
+compute :: proc(ptr: ^Neural, input: []f64) {
+    using ptr
+    for &node, i in ptr.layers[0].nodes {
+        node.eval = input[i]
+    }
+    
+
+    for &layer in ptr.layers[1:] {
+        compute_layer(&layer)
+    }
+
+
+}
+
