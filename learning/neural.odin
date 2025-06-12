@@ -29,15 +29,15 @@ Layer :: struct {
 }
 
 
-Neural :: struct {
-    net_size: []u32,
+Neural :: struct($N : int){
+    net_size: [N]u32,
     layers: []Layer,
     
     weights: []f64,
     nodes: []Node
 }
 
-make_neural :: proc(net_size: []u32) -> ^Neural {
+make_neural :: proc(net_size: [$N]u32) -> Neural(N) {
     nodes_num: u32 = net_size[0]
     edges: u32 = 0
     for i := 1; i < len(net_size); i+=1 {
@@ -46,7 +46,7 @@ make_neural :: proc(net_size: []u32) -> ^Neural {
     } 
     
     w_size := edges
-    ptr := new(Neural)
+    ptr : Neural(N)
     ptr.weights = make([]f64, w_size)
     ptr.net_size = net_size
     nodes := make([]Node, nodes_num)

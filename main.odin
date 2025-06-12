@@ -1,6 +1,7 @@
 package projekt
 import rl "vendor:raylib"
 import "core:fmt"
+import learn "learning"
 
 MAX_SPEED :: 500
 ACC :: 1000.0
@@ -229,7 +230,8 @@ visual_simulation :: proc(sim : ^Simulation) {
 }
 
 main :: proc() {
-    sim := simulation_simple()
+    learn.learn(CARS = 100)
 
-    visual_simulation(&sim)
+    // sim := simulation_simple()
+    // visual_simulation(&sim)
 }
