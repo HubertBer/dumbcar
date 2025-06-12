@@ -328,8 +328,7 @@ carRect :: proc(car : Car) -> rl.Rectangle {
 }
 
 draw_car :: proc(car : Car, zubr_texture: rl.Texture2D) {
-    // Set the size you want for the car image
-    scale : f32 = 2.0 // Change as needed for desired size
+    scale : f32 = 0.2 // Smaller value for a smaller car
     dest := rl.Rectangle{
         car.pos.x,
         car.pos.y,
