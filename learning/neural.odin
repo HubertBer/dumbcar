@@ -62,8 +62,8 @@ make_neural :: proc(net_size: [$N]u32) -> Neural(N) {
         indices += net_size[i-1]
         for j:u32 = 0; j < net_size[i]; j+=1 {
             curr := indices + j
-            nodes[curr].edges = ptr.weights[indices - net_size[i-1]:indices]
-            nodes[curr].nodes = ptr.nodes[edges_id : edges_id + net_size[i-1]]
+            nodes[curr].edges = ptr.weights[edges_id : edges_id + net_size[i-1]]
+            nodes[curr].nodes = ptr.nodes[indices - net_size[i-1]:indices]
 
             edges_id += net_size[i-1]
         }
