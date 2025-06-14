@@ -6,15 +6,15 @@ import "core:sort"
 import "core:math"
 import "core:math/rand"
 
-MAX_SPEED :: 500
-ACC :: 1000.0
+MAX_SPEED :: 1200
+ACC :: 800.0
 
 // IN DEGREES 
 ROTATION_SPEED :: 500.0
 PHYSICS_DT :: 1.0/60.0
 CAR_WIDTH :: 10.0
 CAR_LENGTH :: 30.0
-TRACK_WIDTH :: 100
+TRACK_WIDTH :: 50
 
 SHOW_SPEED :: 0.1
 
@@ -23,7 +23,9 @@ SIM_DURATION :: 8
 
 // RAY CONSTANTS
 MAX_RAY_LEN :: 200.0
-RAY_ANGLES :: [5]f32{90, 45, 0, -45, -90}
+RAY_ANGLES :: [5]f32{60, 30, 0, -30, -60}
+// RAY_ANGLES :: [5]f32{90, 45, 0, -45, -90}
+
 
 // RAYS STUFF
 
@@ -294,8 +296,66 @@ ZIGZAG_MAP :: Map(23){
     }
 }
 
-THE_MAP :: DECA_MAP
-MAP_SIZE :: 10
+NICER_MAP::Map(53) {
+    [53]rl.Vector2 {
+    { 104 , 170 },
+{ 97 , 355 },
+{ 117 , 476 },
+{ 197 , 547 },
+{ 249 , 489 },
+{ 260 , 423 },
+{ 257 , 372 },
+{ 262 , 313 },
+{ 323 , 276 },
+{ 387 , 301 },
+{ 418 , 354 },
+{ 420 , 405 },
+{ 427 , 460 },
+{ 441 , 511 },
+{ 484 , 591 },
+{ 518 , 642 },
+{ 578 , 646 },
+{ 641 , 641 },
+{ 1058 , 655 },
+{ 1085 , 598 },
+{ 1075 , 545 },
+{ 1010 , 550 },
+{ 933 , 555 },
+{ 876 , 555 },
+{ 786 , 552 },
+{ 697 , 546 },
+{ 606 , 547 },
+{ 545 , 520 },
+{ 553 , 467 },
+{ 716 , 431 },
+{ 831 , 442 },
+{ 960 , 471 },
+{ 1055 , 469 },
+{ 1175 , 464 },
+{ 1190 , 527 },
+{ 1191 , 591 },
+{ 1208 , 679 },
+{ 1356 , 681 },
+{ 1419 , 654 },
+{ 1466 , 623 },
+{ 1481 , 542 },
+{ 1486 , 472 },
+{ 1463 , 411 },
+{ 1366 , 385 },
+{ 1069 , 355 },
+{ 634 , 325 },
+{ 551 , 323 },
+{ 526 , 265 },
+{ 686 , 240 },
+{ 1447 , 263 },
+{ 1494 , 191 },
+{ 1484 , 131 },
+{ 147 , 104 },
+
+}}
+
+THE_MAP :: NICER_MAP
+MAP_SIZE :: 53
 
 Car :: struct {
     pos : rl.Vector2,
@@ -377,7 +437,7 @@ simulation_simple :: proc() -> Simulation(1) {
                 THE_MAP.points[0],
                 0,
                 // -120,
-                110,
+                90,
                 // 0,
                 // 0,
                 false,
@@ -489,8 +549,8 @@ car_logic :: proc(sim : ^Simulation($N), logic : learning.Neural($M)) -> (dv, dr
 
         dv, dr = learning.compute(logic, input[:])
 
-        dv = clamp(dv, 0, 1) * 2 - 1
-        dr = clamp(dr, 0, 1) * 2 - 1
+        // dv = clamp(dv, 0, 1) * 2 - 1
+        // dr = clamp(dr, 0, 1) * 2 - 1
         sim.cars[i].speed += dv * ACC * PHYSICS_DT
         sim.cars[i].speed = clamp(sim.cars[i].speed, -MAX_SPEED, MAX_SPEED)
         sim.cars[i].rotation += dr * ROTATION_SPEED * PHYSICS_DT
@@ -519,7 +579,7 @@ fast_simulation :: proc(sim : ^Simulation($N), logic : learning.Neural($M)) {
 }
 
 visual_simulation :: proc(sim : ^Simulation($N), logic : learning.Neural($M)) {
-    rl.InitWindow(2560, 1440, "projekt")
+    rl.InitWindow(1920, 1080, "projekt")
     rl.SetTargetFPS(300)
 
     gameTime : f32 = 0.0
@@ -611,8 +671,9 @@ learn :: proc(
     mut_num: int = 5, 
     take_bests: int = 5,
     show_best: bool = false,
+    // net_size: [$N]u32 = [5]u32{6,8,6,4,2}
     net_size: [$N]u32 = [4]u32{6,6,4,2}
-) {
+) -> learning.Neural {
     cars : [CARS]Car_Score(N)
 
     car_score_len :: proc(it : sort.Interface) -> int {
@@ -651,9 +712,9 @@ learn :: proc(
             &cars
         })
 
-        for car, i in cars {
-            fmt.printfln("i {}, score {}", i, car.score)
-        }
+        // for car, i in cars {
+        //     fmt.printfln("i {}, score {}", i, car.score)
+        // }
 
         // GENETICS !!!!!!
 
@@ -675,9 +736,17 @@ learn :: proc(
             j := rand.int_max(5) + 95
             learning.mutate_neural(&cars[i].neural, cars[j].neural, mut_rate)
         }
-        score(cars[99].neural, true)
+        fmt.eprintfln("{}", score(cars[99].neural, true))
     }
     score(cars[99].neural, true)
+
+    for i in 0..<CARS-1 {
+        learning.delete_neural(cars[i].neural)
+    }
+
+
+    return cars[CARS-1].neural
+
 }
 
 main :: proc() {
