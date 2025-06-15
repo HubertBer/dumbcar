@@ -37,6 +37,40 @@ user_input :: proc(sim : ^Simulation($N, $M)) {
     car.rotation += dr * ROTATION_SPEED * PHYSICS_DT
 }
 
+outside_test :: proc() {
+    rl.InitWindow(2560, 1440, "projekt")
+    rl.SetTargetFPS(300)
+
+
+    p1 := rl.Vector2{100, 100}
+    p2 := rl.Vector2{1000, 1000}
+    p3 := rl.Vector2{2000, 100}
+
+    
+    for !rl.WindowShouldClose() {
+        rl.BeginDrawing()
+        rl.ClearBackground(rl.WHITE)
+        
+        if rl.IsKeyDown(rl.KeyboardKey.S) {
+            // p3.y += rl.GetFrameTime() * 100
+            p1.y += rl.GetFrameTime() * 100
+        }
+        in0, out0 := inner_outer(p1, p2, p3)
+
+        // rl.DrawCircleV(p1, 50, rl.GREEN)
+        rl.DrawCircleV(p1, 5, rl.BLACK)
+        // rl.DrawCircleV(p2, 50, rl.GREEN)
+        rl.DrawCircleV(p2, 5, rl.BLACK)
+        // rl.DrawCircleV(p3, 50, rl.GREEN)
+        rl.DrawCircleV(p3, 5, rl.BLACK)
+        
+        rl.DrawCircleV(in0, 5, rl.MAGENTA)
+        rl.DrawCircleV(out0, 5, rl.MAGENTA)
+        
+        rl.EndDrawing()
+    }
+}
+
 main :: proc() {
     learn(
         CARS = 100,
@@ -44,7 +78,5 @@ main :: proc() {
         CHILD_MUT = 30,
         LEAVE_OUT = 10, 
     )
-
-    // sim := simulation_simple()
-    // visual_simulation(&sim)
+    // outside_test()
 }

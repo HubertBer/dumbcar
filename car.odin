@@ -33,6 +33,8 @@ draw_car :: proc(car : Car, track, track_in, track_out : Map($N)) {
             rl.DrawLineV(car.pos, ray_end, rl.LIGHTGRAY)
         }
     }
+
+    rl.DrawCircleV(track.points[car.p_now % len(track.points)], 10, rl.YELLOW)
 }
 
 carRect :: proc(car : Car) -> rl.Rectangle {
@@ -44,28 +46,43 @@ carRect :: proc(car : Car) -> rl.Rectangle {
     }
 }
 
-car_on_track :: proc(car : Car, track : Map($N)) -> bool {
-    for i in 1..<(N + 1) {
-        p0 := track.points[(i - 1) % N]
-        p1 := track.points[i % N]
-
-        perp := rl.Vector2Rotate(rl.Vector2Normalize(p1 - p0), 90)
-        points : [4]rl.Vector2 = {
-            p0 + perp * TRACK_WIDTH / 2,
-            p0 - perp * TRACK_WIDTH / 2,
-            p1 - perp * TRACK_WIDTH / 2,
-            p1 + perp * TRACK_WIDTH / 2,
-        }
-
-        if rl.CheckCollisionPointPoly(car.pos, &points[0], len(points)) || 
-            rl.Vector2Length(car.pos - p0) < TRACK_WIDTH / 2 ||
-            rl.Vector2Length(car.pos - p1) < TRACK_WIDTH / 2 {
-            return true
-        }
+car_on_track :: proc(car : Car, track_in, track_out : Map($N)) -> bool {
+    i := MAP_SIZE + car.p_now
+    M := MAP_SIZE
+    poly := [6]rl.Vector2{
+        track_in.points[(i - 1) % M],
+        track_in.points[(i) % M],
+        track_in.points[(i + 1) % M],
+        track_out.points[(i + 1) % M],
+        track_out.points[(i) % M],
+        track_out.points[(i - 1) % M],
     }
-    
-    return false
+
+    return rl.CheckCollisionPointPoly(car.pos, &poly[0], 6)
 }
+
+// car_on_track :: proc(car : Car, track : Map($N)) -> bool {
+//     for i in 1..<(N + 1) {
+//         p0 := track.points[(i - 1) % N]
+//         p1 := track.points[i % N]
+
+//         perp := rl.Vector2Rotate(rl.Vector2Normalize(p1 - p0), 90)
+//         points : [4]rl.Vector2 = {
+//             p0 + perp * TRACK_WIDTH / 2,
+//             p0 - perp * TRACK_WIDTH / 2,
+//             p1 - perp * TRACK_WIDTH / 2,
+//             p1 + perp * TRACK_WIDTH / 2,
+//         }
+
+//         if rl.CheckCollisionPointPoly(car.pos, &points[0], len(points)) || 
+//             rl.Vector2Length(car.pos - p0) < TRACK_WIDTH / 2 ||
+//             rl.Vector2Length(car.pos - p1) < TRACK_WIDTH / 2 {
+//             return true
+//         }
+//     }
+    
+//     return false
+// }
 
 car_logic :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), track_in, track_out : Map(K)) {
     for i in 0..<N {

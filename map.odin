@@ -5,8 +5,9 @@ Map :: struct($N : int){
     points : [N]rl.Vector2
 }
 
-HEX_MAP :: Map(6){
-    [6]rl.Vector2{
+HEX_MAP_SIZE :: 6
+HEX_MAP :: Map(HEX_MAP_SIZE){
+    [HEX_MAP_SIZE]rl.Vector2{
         rl.Vector2{473.2, 200.0},
         rl.Vector2{400.0, 73.2},
         rl.Vector2{200.0, 73.2},
@@ -24,7 +25,7 @@ intersect_lines :: proc(l00, l01, l10, l11: rl.Vector2) -> rl.Vector2 {
 
     rs := r.x * s.y - r.y * s.x
 
-    if rs < rl.EPSILON {
+    if abs(rs) < rl.EPSILON {
         return l01
     }
 
@@ -44,11 +45,19 @@ inner_outer :: proc(p0, p1, p2 : rl.Vector2) -> (inner, outer : rl.Vector2){
     p10out := p1 + perp01 * TRACK_WIDTH / 2
     p11out := p1 + perp12 * TRACK_WIDTH / 2
     p2out := p2 + perp12 * TRACK_WIDTH / 2
-
+    // rl.DrawCircleV(p0out, 10, rl.GREEN)
+    // rl.DrawCircleV(p10out, 10, rl.BLUE)
+    // rl.DrawCircleV(p11out, 10, rl.RED)
+    // rl.DrawCircleV(p2out, 10, rl.BLACK)
+    
     p0in := p0 - perp01 * TRACK_WIDTH / 2
     p10in := p1 - perp01 * TRACK_WIDTH / 2
     p11in := p1 - perp12 * TRACK_WIDTH / 2
     p2in := p2 - perp12 * TRACK_WIDTH / 2
+    // rl.DrawCircleV(p0in, 10, rl.GREEN)
+    // rl.DrawCircleV(p10in, 10, rl.BLUE)
+    // rl.DrawCircleV(p11in, 10, rl.RED)
+    // rl.DrawCircleV(p2in, 10, rl.BLACK)
     
     return intersect_lines(p0out, p10out, p11out, p2out), intersect_lines(p0in, p10in, p11in, p2in) 
 }
