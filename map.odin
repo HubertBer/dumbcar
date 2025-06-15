@@ -17,6 +17,54 @@ HEX_MAP :: Map(HEX_MAP_SIZE){
     },
 }
 
+DECA_MAP_SIZE :: 10
+DECA_MAP :: Map(DECA_MAP_SIZE){
+    [DECA_MAP_SIZE]rl.Vector2{
+        rl.Vector2{700.0, 400.0},
+        rl.Vector2{642.7, 576.3},
+        rl.Vector2{509.0, 690.2},
+        rl.Vector2{340.0, 726.6},
+        rl.Vector2{184.5, 676.3},
+        rl.Vector2{100.0, 550.0},
+        rl.Vector2{100.0, 400.0},
+        rl.Vector2{157.3, 223.7},
+        rl.Vector2{291.0, 109.8},
+        rl.Vector2{460.0, 73.4},
+    }
+}
+
+ZIGZAG_MAP_SIZE :: 23
+ZIGZAG_MAP :: Map(ZIGZAG_MAP_SIZE){
+    [ZIGZAG_MAP_SIZE]rl.Vector2{
+        rl.Vector2{800.0, 200.0},
+        rl.Vector2{700.0, 400.0},
+        rl.Vector2{800.0, 600.0},
+        rl.Vector2{700.0, 800.0},
+        rl.Vector2{800.0, 1000.0},
+        rl.Vector2{700.0, 1200.0},
+
+        rl.Vector2{900.0, 1300.0},
+        rl.Vector2{1100.0, 1200.0},
+        rl.Vector2{1300.0, 1300.0},
+        rl.Vector2{1500.0, 1200.0},
+        rl.Vector2{1700.0, 1300.0},
+        rl.Vector2{1800.0, 1200.0},
+
+        rl.Vector2{1900.0, 1000.0},
+        rl.Vector2{1800.0, 800.0},
+        rl.Vector2{1900.0, 600.0},
+        rl.Vector2{1800.0, 400.0},
+        rl.Vector2{1900.0, 200.0},
+        rl.Vector2{1800.0, 200.0},
+
+        rl.Vector2{1600.0, 100.0},
+        rl.Vector2{1400.0, 200.0},
+        rl.Vector2{1200.0, 100.0},
+        rl.Vector2{1000.0, 200.0},
+        rl.Vector2{800.0, 100.0},
+    }
+}
+
 intersect_lines :: proc(l00, l01, l10, l11: rl.Vector2) -> rl.Vector2 {
     r := l01 - l00
     s := l11 - l10

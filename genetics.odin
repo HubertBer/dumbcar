@@ -6,13 +6,11 @@ import "core:math"
 import "core:math/rand"
 import rl "vendor:raylib"
 
-score :: proc(car : learning.Neural($N), vis : bool = false) -> f64 {
-    sim := simulation_simple()
-
+score :: proc(car : learning.Neural($N), vis : bool = false, sim : ^Simulation($M, $K), track_in, track_out : Map(K)) -> f64 {
     if vis {
-        visual_simulation(&sim, car)
+        visual_simulation(sim, car, track_in, track_out)
     } else {
-        fast_simulation(&sim, car)
+        fast_simulation(sim, car, track_in, track_out)
     }
 
     mod := len(sim.track.points)
@@ -26,9 +24,10 @@ score :: proc(car : learning.Neural($N), vis : bool = false) -> f64 {
     
     ans := f64(curr) + f64(t)
     ans = max(ans, 0)
-    if sim.cars[0].dead {
-        ans -= 3
-    }
+        if sim.cars[0].dead {
+        //     ans /= 2
+            ans -= 4
+        }
     return ans
 }
 
@@ -53,8 +52,9 @@ learn :: proc(
     $CHILD_MUT: int,
     $LEAVE_OUT: int,
     steps: u32 = 100,
+    show_mod : int = 1,
     mut_rate: f64 = 0.2,
-    net_size: [$N]u32 = [4]u32{6,6,4,2}
+    net_size: [$N]u32 = [4]u32{6,6,6,2}
 ) {
     CHILD_REROLL :: CARS - CHILD_AVG - CHILD_MUT - LEAVE_OUT
     REROLL_L :: 0
@@ -68,6 +68,9 @@ learn :: proc(
     assert(LEAVE_R == CARS)
     
     cars : [CARS]Car_Score(N)
+    sim := simulation_simple()
+    sim_base := simulation_simple()
+    track_in, track_out := track_in_out(sim.track)
 
     car_score_len :: proc(it : sort.Interface) -> int {
         return int(CARS)
@@ -94,7 +97,8 @@ learn :: proc(
     for i in 0..<steps {
         rand.shuffle(cars[:])
         for car, i in cars {
-            cars[i].score = score(car.neural)
+            sim.cars = sim_base.cars
+            cars[i].score = score(car.neural, sim = &sim, track_in = track_in, track_out = track_out)
         }
 
         sort.sort(sort.Interface{
@@ -122,7 +126,11 @@ learn :: proc(
             j := LEAVE_L + rand.int_max(LEAVE_OUT)
             learning.mutate_neural(&cars[i].neural, cars[j].neural)
         }
-        score(cars[CARS - 1].neural, true)
+        if int(i) % show_mod == 0 {
+            sim.cars = sim_base.cars
+            score(cars[CARS - 1].neural, true, &sim, track_in, track_out)
+        }
     }
-    score(cars[CARS - 1].neural, true)
+    sim.cars = sim_base.cars
+    score(cars[CARS - 1].neural, true, &sim, track_in, track_out)
 }

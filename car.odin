@@ -57,8 +57,17 @@ car_on_track :: proc(car : Car, track_in, track_out : Map($N)) -> bool {
         track_out.points[(i) % M],
         track_out.points[(i - 1) % M],
     }
+    poly2 := [6]rl.Vector2{
+        track_in.points[(i + 1) % M],
+        track_in.points[(i + 2) % M],
+        track_in.points[(i + 3) % M],
+        track_out.points[(i + 3) % M],
+        track_out.points[(i + 2) % M],
+        track_out.points[(i + 1) % M],
+    }
 
-    return rl.CheckCollisionPointPoly(car.pos, &poly[0], 6)
+    return rl.CheckCollisionPointPoly(car.pos, &poly[0], 6) || 
+        rl.CheckCollisionPointPoly(car.pos, &poly2[0], 6)
 }
 
 // car_on_track :: proc(car : Car, track : Map($N)) -> bool {
@@ -87,15 +96,21 @@ car_on_track :: proc(car : Car, track_in, track_out : Map($N)) -> bool {
 car_logic :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), track_in, track_out : Map(K)) {
     for i in 0..<N {
         rays, _, _ := raycast_sensors(sim.cars[i], sim.track, track_in, track_out)
-        input := [RAY_COUNT + 1]f64{0, 0, 0, 0, 0, f64(sim.cars[i].speed)}
+        input : [RAY_COUNT + 1]f64
         for j in 0..<RAY_COUNT {
             input[j] = rays[j]
         }
         input[RAY_COUNT] = f64(sim.cars[i].speed) / f64(MAX_SPEED)
         
+        // input *= 2
+        // input -= 1
+
         dv, dr := learning.compute(logic, input[:])
+        // dv = 2 * dv - 1
+        // dr = 2 * dr - 1
+        
         sim.cars[i].speed += dv * ACC * PHYSICS_DT
-        sim.cars[i].speed = clamp(sim.cars[i].speed, -MAX_SPEED, MAX_SPEED)
+        sim.cars[i].speed = clamp(sim.cars[i].speed, MIN_SPEED, MAX_SPEED)
         sim.cars[i].rotation += dr * ROTATION_SPEED * PHYSICS_DT
     }
 }

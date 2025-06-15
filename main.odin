@@ -5,11 +5,6 @@ import "learning"
 import "core:sort"
 import "core:math"
 
-Simulation :: struct($N : int, $M : int) {
-    cars : [N]Car,
-    track : Map(M),
-}
-
 user_input :: proc(sim : ^Simulation($N, $M)) {
     car := &sim.cars[0]
 
@@ -73,10 +68,14 @@ outside_test :: proc() {
 
 main :: proc() {
     learn(
-        CARS = 100,
-        CHILD_AVG = 30,
-        CHILD_MUT = 30,
-        LEAVE_OUT = 10, 
+        CARS = 1000,
+        CHILD_AVG = 300,
+        CHILD_MUT = 400,
+        LEAVE_OUT = 50, 
+        steps = 10000,
+        show_mod = 2,
+        mut_rate = 2.5,
+        
     )
     // outside_test()
 }

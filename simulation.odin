@@ -2,6 +2,11 @@ package projekt
 import rl "vendor:raylib"
 import "learning"
 
+Simulation :: struct($N : int, $M : int) {
+    cars : [N]Car,
+    track : Map(M),
+}
+
 mark_dead :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map(K)) {
     for &car in sim.cars {
         if !car_on_track(car, track_in, track_out) {
@@ -16,20 +21,20 @@ mark_dead :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map(K)) {
 simulation_simple :: proc() -> Simulation(1, MAP_SIZE) {
     p0 := MAP_USED.points[0]
     p1 := MAP_USED.points[1]
-    rot := rl.Vector2Angle(rl.Vector2{1, 0}, p1 - p0) * rl.RAD2DEG + 180
+    rot := rl.Vector2Angle(rl.Vector2{1, 0}, p1 - p0) * rl.RAD2DEG
     
     return Simulation(1, MAP_SIZE){
         [1]Car{
             Car{
                 MAP_USED.points[0],
-                0,
+                MIN_SPEED,
                 rot,
                 false,
                 false,
                 0
             }
         },
-        HEX_MAP
+        MAP_USED
     }
 }
 
@@ -52,9 +57,8 @@ simulation_step :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map(K))
     mark_dead(sim, track_in, track_out)
 }
 
-fast_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)) {
+fast_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), track_in, track_out : Map(K)) {
     physicsTime : f32 = 0.0
-    track_in, track_out := track_in_out(sim.track) 
 
     for physicsTime < SIM_DURATION  {
         physicsTime += PHYSICS_DT
@@ -67,14 +71,13 @@ fast_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)) 
     }
 }
 
-visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)) {
+visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), track_in, track_out : Map(K)) {
     rl.InitWindow(2560, 1440, "projekt")
     rl.SetTargetFPS(300)
 
     gameTime : f32 = 0.0
     physicsTime : f32 = 0.0
-    track_in, track_out := track_in_out(sim.track)
-
+    
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
         
