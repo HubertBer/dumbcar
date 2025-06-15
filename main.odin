@@ -2,68 +2,77 @@ package projekt
 import rl "vendor:raylib"
 import "core:fmt"
 import "learning"
+import "heuristic"
 import "core:sort"
 import "core:math"
+import "core:math/rand"
 
-user_input :: proc(sim : ^Simulation($N, $M)) {
-    car := &sim.cars[0]
+heuristic_simulation :: proc(sim: ^Simulation(1)) {
+    physicsTime : f32 = 0.0
+    last_step: rl.Vector2
+    pdv, pdr : f32
+    for physicsTime < SIM_DURATION  {
+        physicsTime += PHYSICS_DT
 
-    if car.dead {
-        return
-    }
+        pos := sim.cars[0].pos
+        next_p := sim.track.points[(sim.cars[0].p_now+1)%MAP_SIZE]
 
-    dv : f32 = 0.0
-    if rl.IsKeyDown(rl.KeyboardKey.W) {
-        dv += 1
-    }
-    if rl.IsKeyDown(rl.KeyboardKey.S) {
-        dv -= 1
-    }
-    
-    dr : f32 = 0
-    if rl.IsKeyDown(rl.KeyboardKey.A) {
-        dr -= 1
-    }
-    if rl.IsKeyDown(rl.KeyboardKey.D) {
-        dr += 1
-    }
+        
+        dv, dr := heuristic.next_step(last_step, pos, next_p) 
+        sim.cars[0].speed += dv * ACC * PHYSICS_DT
+        sim.cars[0].speed = clamp(sim.cars[0].speed, MIN_SPEED, MAX_SPEED)
+        sim.cars[0].rotation += dr * ROTATION_SPEED * PHYSICS_DT       
+        
+        simulation_step(sim)
+        last_step = sim.cars[0].pos - pos
 
-    car.speed += dv * ACC * PHYSICS_DT
-    car.rotation += dr * ROTATION_SPEED * PHYSICS_DT
-}
+        if sim.cars[0].dead {
+            break
+        }
+    }
+} 
 
-outside_test :: proc() {
-    rl.InitWindow(2560, 1440, "projekt")
+heuristic_visual_simulation :: proc(sim : ^Simulation(1)) {
+    rl.InitWindow(1920, 1080, "projekt")
     rl.SetTargetFPS(300)
 
-
-    p1 := rl.Vector2{100, 100}
-    p2 := rl.Vector2{1000, 1000}
-    p3 := rl.Vector2{2000, 100}
-
-    
+    gameTime : f32 = 0.0
+    physicsTime : f32 = 0.0
+    last_step: rl.Vector2
     for !rl.WindowShouldClose() {
+        dt := rl.GetFrameTime()
+        
+        gameTime += dt
+        if dt > 0.25 {
+            dt = 0.25
+        }
+
+        for physicsTime < gameTime && physicsTime < SIM_DURATION {
+            physicsTime += PHYSICS_DT
+            // user_input(sim)
+            pos := sim.cars[0].pos
+            next_p := sim.track.points[(sim.cars[0].p_now+1)%MAP_SIZE]
+        
+            dv, dr := heuristic.next_step(last_step, pos, next_p)     
+            sim.cars[0].speed += dv * ACC * PHYSICS_DT
+            sim.cars[0].speed = clamp(sim.cars[0].speed, MIN_SPEED, MAX_SPEED)
+            sim.cars[0].rotation += dr * ROTATION_SPEED * PHYSICS_DT       
+            fmt.printfln("DV: {}",dv)
+
+            simulation_step(sim)
+            last_step = sim.cars[0].pos - pos             
+        }
+
+        if physicsTime >= SIM_DURATION {
+            break
+        }
+
         rl.BeginDrawing()
         rl.ClearBackground(rl.WHITE)
-        
-        if rl.IsKeyDown(rl.KeyboardKey.S) {
-            // p3.y += rl.GetFrameTime() * 100
-            p1.y += rl.GetFrameTime() * 100
-        }
-        in0, out0 := inner_outer(p1, p2, p3)
-
-        // rl.DrawCircleV(p1, 50, rl.GREEN)
-        rl.DrawCircleV(p1, 5, rl.BLACK)
-        // rl.DrawCircleV(p2, 50, rl.GREEN)
-        rl.DrawCircleV(p2, 5, rl.BLACK)
-        // rl.DrawCircleV(p3, 50, rl.GREEN)
-        rl.DrawCircleV(p3, 5, rl.BLACK)
-        
-        rl.DrawCircleV(in0, 5, rl.MAGENTA)
-        rl.DrawCircleV(out0, 5, rl.MAGENTA)
-        
+        simulation_draw(sim)
         rl.EndDrawing()
     }
+    rl.CloseWindow()
 }
 
 main :: proc() {
@@ -78,4 +87,7 @@ main :: proc() {
         
     )
     // outside_test()
+    // sim := simulation_simple()
+    // heuristic_visual_simulation(&sim)
+    // visual_simulation(&sim)
 }

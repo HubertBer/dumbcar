@@ -9,7 +9,6 @@ relu :: proc(x: f64) -> f64 {
     return math.max(0, x)
 }
 
-
 sigmoid :: proc(x : f64) -> f64 {
     return 1 / (1 + math.exp(-x))
 }
@@ -84,11 +83,10 @@ make_neural :: proc(net_size: [$N]u32) -> Neural(N) {
 }
 
 
-delete_neural :: proc(ptr: ^Neural($N)) {
+delete_neural :: proc(ptr: Neural($N)) {
     delete(ptr.weights)
     delete(ptr.nodes)
     delete(ptr.layers)
-    free(ptr)
 }
 
 random_weights :: proc(ptr: ^Neural($N)) {
@@ -120,6 +118,7 @@ compute_layer :: proc(ptr: ^Layer) {
 
 compute :: proc(ptr: Neural($N), input: []f64) -> (f32, f32){
     using ptr
+
     for &node, i in ptr.layers[0].nodes {
         node.eval = input[i]
     }
@@ -130,7 +129,6 @@ compute :: proc(ptr: Neural($N), input: []f64) -> (f32, f32){
 
     out_nodes := ptr.layers[len(ptr.layers)-1].nodes
     return f32(out_nodes[0].eval), f32(out_nodes[1].eval)
-    // return f32(nodes[N - 2].eval), f32(nodes[N - 1].eval) 
 }
 
 average_neural :: proc(out : ^Neural($N),  in0, in1 : Neural(N)) {
