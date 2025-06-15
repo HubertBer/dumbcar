@@ -48,13 +48,13 @@ next_step :: proc(
     acc := cos
     length := vlen(last_move)
 
-    fmt.println(ray)
+    fmt.printfln("Ray: {}, length: {} ", ray, length)
     // acc *= 20
     // acc -= 19
     // acc /= 2
     // acc = clamp(acc, -1, 1)
 
-    acc -= (math.exp((f32(ray))) -0.95)
+    acc -= (math.exp((f32(ray))*length/3) -1.00)
     acc = clamp(acc, -1, 1)
 
 

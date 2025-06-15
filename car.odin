@@ -66,8 +66,18 @@ car_on_track :: proc(car : Car, track_in, track_out : Map($N)) -> bool {
         track_out.points[(i + 1) % M],
     }
 
+    poly3 := [6]rl.Vector2{
+        track_in.points[(i - 3 + M) % M],
+        track_in.points[(i - 2 + M) % M],
+        track_in.points[(i - 1 + M) % M],
+        track_out.points[(i- 1 + M) % M],
+        track_out.points[(i- 2 + M) % M],
+        track_out.points[(i- 3 + M) % M],
+    }
+
     return rl.CheckCollisionPointPoly(car.pos, &poly[0], 6) || 
-        rl.CheckCollisionPointPoly(car.pos, &poly2[0], 6)
+        rl.CheckCollisionPointPoly(car.pos, &poly2[0], 6) || 
+        rl.CheckCollisionPointPoly(car.pos, &poly3[0], 6)
 }
 
 // car_on_track :: proc(car : Car, track : Map($N)) -> bool {
