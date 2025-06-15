@@ -46,7 +46,7 @@ raycast_sensors :: proc(car : Car, track: Map($N), track_in: Map(N), track_out: 
         hit := false
 
         j0, j1 := track_points_range_small(car, track)
-        for j in j0..=j1 {
+        for j in j0-2..=j1+2 {
             ok, point := segment_intersect(p0, p1, track_in.points[(j - 1) % N], track_in.points[j % N])
             d := rl.Vector2Distance(point, p0)
             if ok && d < min_dist {

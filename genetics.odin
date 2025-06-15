@@ -130,7 +130,15 @@ learn :: proc(
             sim.cars = sim_base.cars
             score(cars[CARS - 1].neural, true, &sim, track_in, track_out)
         }
+
+        if rl.IsKeyPressed(rl.KeyboardKey.SPACE) {
+            break
+        }
     }
     sim.cars = sim_base.cars
-    score(cars[CARS - 1].neural, true, &sim, track_in, track_out)
+
+    sim2 := simulation_on_map(INFINITY_MAP)
+    track_in2, track_out2 := track_in_out(sim2.track)
+    // score(cars[CARS - 1].neural, true, &sim2, track_in2, track_out2)
+    visual_simulation(&sim2, cars[CARS - 1].neural, track_in2, track_out2, true)
 }

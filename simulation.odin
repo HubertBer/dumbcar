@@ -38,6 +38,26 @@ simulation_simple :: proc() -> Simulation(1, MAP_SIZE) {
     }
 }
 
+simulation_on_map :: proc(track : Map($N)) -> Simulation(1, N) {
+    p0 := MAP_USED.points[0]
+    p1 := MAP_USED.points[1]
+    rot := rl.Vector2Angle(rl.Vector2{1, 0}, p1 - p0) * rl.RAD2DEG
+
+    return Simulation(1, N){
+        [1]Car{
+            Car{
+                track.points[0],
+                MIN_SPEED,
+                rot,
+                false,
+                false,
+                0
+            }
+        },
+        track
+    }
+}
+
 simulation_step :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map(K)) {
     for &car in sim.cars {
         if car.dead {
@@ -71,7 +91,7 @@ fast_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), 
     }
 }
 
-visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), track_in, track_out : Map(K)) {
+visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), track_in, track_out : Map(K), infinite := false) {
     rl.InitWindow(2560, 1440, "projekt")
     rl.SetTargetFPS(300)
 
@@ -86,14 +106,14 @@ visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)
             dt = 0.25
         }
 
-        for physicsTime < gameTime && physicsTime < SIM_DURATION {
+        for physicsTime < gameTime && (physicsTime < SIM_DURATION || infinite) {
             physicsTime += PHYSICS_DT
             // user_input(sim)
             car_logic(sim, logic, track_in, track_out)
             simulation_step(sim, track_in, track_out)
         }
 
-        if physicsTime >= SIM_DURATION {
+        if physicsTime >= SIM_DURATION && !infinite{
             break
         } 
 
@@ -106,11 +126,11 @@ visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)
 }
 
 simulation_draw :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map($M)) {
-    for i in 1..=MAP_SIZE {
-        out0 := track_out.points[i - 1 % MAP_SIZE]
-        out1 := track_out.points[i % MAP_SIZE]
-        in0 := track_in.points[i - 1 % MAP_SIZE]
-        in1 := track_in.points[i % MAP_SIZE]
+    for i in 1..=M {
+        out0 := track_out.points[i - 1 % M]
+        out1 := track_out.points[i % M]
+        in0 := track_in.points[i - 1 % M]
+        in1 := track_in.points[i % M]
 
         
         rl.DrawTriangle(out0, out1, in1, rl.BLACK)

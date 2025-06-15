@@ -47,8 +47,8 @@ carRect :: proc(car : Car) -> rl.Rectangle {
 }
 
 car_on_track :: proc(car : Car, track_in, track_out : Map($N)) -> bool {
-    i := MAP_SIZE + car.p_now
-    M := MAP_SIZE
+    i := N + car.p_now
+    M := N
     poly := [6]rl.Vector2{
         track_in.points[(i - 1) % M],
         track_in.points[(i) % M],
