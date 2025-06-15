@@ -19,8 +19,6 @@ tanh :: proc(x: f64) -> f64 {
 
 activation :: tanh
 
-// activation :: sigmoid
-
 // [from, to)
 Ival :: struct {
     from: u32,
