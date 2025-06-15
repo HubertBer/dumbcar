@@ -11,11 +11,11 @@ Car :: struct {
     p_now : int,
 }
 
-draw_car :: proc(car : Car, track, track_in, track_out : Map($N)) {
-    color := rl.BLUE
+draw_car :: proc(car : Car, track, track_in, track_out : Map($N), color : rl.Color = rl.BLUE) {
+    color := color
     if !car.on_track {
         color = rl.RED
-    } 
+    }
     rl.DrawRectanglePro(carRect(car), rl.Vector2{CAR_LENGTH / 2, CAR_WIDTH / 2}, car.rotation, color)
     rl.DrawCircleV(car.pos, 5, rl.BLACK)
 
@@ -103,24 +103,31 @@ car_on_track :: proc(car : Car, track_in, track_out : Map($N)) -> bool {
 //     return false
 // }
 
-car_logic :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)) {
-    for i in 0..<N {
-        rays, _, _ := raycast_sensors(sim.cars[i], sim.track, sim.track_in, sim.track_out)
-        input : [RAY_COUNT + 1]f64
-        for j in 0..<RAY_COUNT {
-            input[j] = rays[j]
-        }
-        input[RAY_COUNT] = f64(sim.cars[i].speed) / f64(MAX_SPEED)
-        
-        // input *= 2
-        // input -= 1
+one_car_logic :: proc(car: ^Car, logic: learning.Neural($K), track: Map($M), track_in: Map(M), track_out: Map(M)){
+    rays, _, _ := raycast_sensors(car^, track, track_in, track_out)
+    input : [RAY_COUNT + 1]f64
+    for j in 0..<RAY_COUNT {
+        input[j] = rays[j]
+    }
+    input[RAY_COUNT] = f64(car.speed) / f64(MAX_SPEED)
+    
+    // input *= 2
+    // input -= 1
 
-        dv, dr := learning.compute(logic, input[:])
-        // dv = 2 * dv - 1
-        // dr = 2 * dr - 1
-        
-        sim.cars[i].speed += dv * ACC * PHYSICS_DT
-        sim.cars[i].speed = clamp(sim.cars[i].speed, MIN_SPEED, MAX_SPEED)
-        sim.cars[i].rotation += dr * ROTATION_SPEED * PHYSICS_DT
+    dv, dr := learning.compute(logic, input[:])
+    // dv = 2 * dv - 1
+    // dr = 2 * dr - 1
+    
+    car.speed += dv * ACC * PHYSICS_DT
+    car.speed = clamp(car.speed, MIN_SPEED, MAX_SPEED)
+    car.rotation += dr * ROTATION_SPEED * PHYSICS_DT
+}
+
+car_logic :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), lastHeura: bool = false) {
+
+    n := N if !lastHeura else N-1
+
+    for i in 0..<n {
+        one_car_logic(&sim.cars[i], logic,  sim.track, sim.track_in, sim.track_out)
     }
 }
