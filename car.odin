@@ -93,9 +93,9 @@ car_on_track :: proc(car : Car, track_in, track_out : Map($N)) -> bool {
 //     return false
 // }
 
-car_logic :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), track_in, track_out : Map(K)) {
+car_logic :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)) {
     for i in 0..<N {
-        rays, _, _ := raycast_sensors(sim.cars[i], sim.track, track_in, track_out)
+        rays, _, _ := raycast_sensors(sim.cars[i], sim.track, sim.track_in, sim.track_out)
         input : [RAY_COUNT + 1]f64
         for j in 0..<RAY_COUNT {
             input[j] = rays[j]

@@ -1,15 +1,18 @@
 package projekt
 import rl "vendor:raylib"
 import "learning"
+import "heuristic"
 
 Simulation :: struct($N : int, $M : int) {
     cars : [N]Car,
     track : Map(M),
+    track_in : Map(M),
+    track_out : Map(M)
 }
 
-mark_dead :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map(K)) {
+mark_dead :: proc(sim : ^Simulation($N, $K)) {
     for &car in sim.cars {
-        if !car_on_track(car, track_in, track_out) {
+        if !car_on_track(car, sim.track_in, sim.track_out) {
             car.dead = true
             car.on_track = false
         } else {
@@ -22,6 +25,7 @@ simulation_simple :: proc() -> Simulation(1, MAP_SIZE) {
     p0 := MAP_USED.points[0]
     p1 := MAP_USED.points[1]
     rot := rl.Vector2Angle(rl.Vector2{1, 0}, p1 - p0) * rl.RAD2DEG
+    track_in, track_out := track_in_out(MAP_USED)
     
     return Simulation(1, MAP_SIZE){
         [1]Car{
@@ -34,7 +38,9 @@ simulation_simple :: proc() -> Simulation(1, MAP_SIZE) {
                 0
             }
         },
-        MAP_USED
+        MAP_USED,
+        track_in,
+        track_out
     }
 }
 
@@ -42,6 +48,8 @@ simulation_on_map :: proc(track : Map($N)) -> Simulation(1, N) {
     p0 := MAP_USED.points[0]
     p1 := MAP_USED.points[1]
     rot := rl.Vector2Angle(rl.Vector2{1, 0}, p1 - p0) * rl.RAD2DEG
+
+    track_in, track_out := track_in_out(track)
 
     return Simulation(1, N){
         [1]Car{
@@ -54,11 +62,13 @@ simulation_on_map :: proc(track : Map($N)) -> Simulation(1, N) {
                 0
             }
         },
-        track
+        track,
+        track_in,
+        track_out
     }
 }
 
-simulation_step :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map(K)) {
+simulation_step :: proc(sim : ^Simulation($N, $K)) {
     for &car in sim.cars {
         if car.dead {
             continue
@@ -74,24 +84,24 @@ simulation_step :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map(K))
         car.pos += forward * car.speed * PHYSICS_DT
     }
 
-    mark_dead(sim, track_in, track_out)
+    mark_dead(sim)
 }
 
-fast_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), track_in, track_out : Map(K)) {
+fast_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)) {
     physicsTime : f32 = 0.0
 
     for physicsTime < SIM_DURATION  {
         physicsTime += PHYSICS_DT
-        car_logic(sim, logic, track_in, track_out)
+        car_logic(sim, logic)
         
-        simulation_step(sim, track_in, track_out)
+        simulation_step(sim)
         if sim.cars[0].dead {
             break
         }
     }
 }
 
-visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), track_in, track_out : Map(K), infinite := false) {
+visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), infinite := false) {
     rl.InitWindow(2560, 1440, "projekt")
     rl.SetTargetFPS(300)
 
@@ -109,8 +119,8 @@ visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)
         for physicsTime < gameTime && (physicsTime < SIM_DURATION || infinite) {
             physicsTime += PHYSICS_DT
             // user_input(sim)
-            car_logic(sim, logic, track_in, track_out)
-            simulation_step(sim, track_in, track_out)
+            car_logic(sim, logic)
+            simulation_step(sim)
         }
 
         if physicsTime >= SIM_DURATION && !infinite{
@@ -119,18 +129,18 @@ visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)
 
         rl.BeginDrawing()
         rl.ClearBackground(rl.WHITE)
-        simulation_draw(sim, track_in, track_out)
+        simulation_draw(sim)
         rl.EndDrawing()
     }
     rl.CloseWindow()
 }
 
-simulation_draw :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map($M)) {
-    for i in 1..=M {
-        out0 := track_out.points[i - 1 % M]
-        out1 := track_out.points[i % M]
-        in0 := track_in.points[i - 1 % M]
-        in1 := track_in.points[i % M]
+simulation_draw :: proc(sim : ^Simulation($N, $K)) {
+    for i in 1..=K {
+        out0 := sim.track_out.points[(i - 1) % K]
+        out1 := sim.track_out.points[i % K]
+        in0 := sim.track_in.points[(i - 1) % K]
+        in1 := sim.track_in.points[i % K]
 
         
         rl.DrawTriangle(out0, out1, in1, rl.BLACK)
@@ -153,7 +163,7 @@ simulation_draw :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map($M)
     // }
 
     for car in sim.cars {
-        draw_car(car, sim.track, track_in, track_out)
+        draw_car(car, sim.track, sim.track_in, sim.track_out)
     }
 
     // for p, i in track_in.points {
@@ -162,4 +172,74 @@ simulation_draw :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map($M)
     // for p, i in track_out.points {
     //     rl.DrawCircleV(p, 10, rl.GREEN)
     // }
+}
+
+heuristic_simulation :: proc(sim: ^Simulation(1, $M)) {
+    physicsTime : f32 = 0.0
+    last_step: rl.Vector2
+    pdv, pdr : f32
+    for physicsTime < SIM_DURATION  {
+        physicsTime += PHYSICS_DT
+
+        pos := sim.cars[0].pos
+        next_p := sim.track.points[(sim.cars[0].p_now+1)%M]
+
+        
+        dv, dr := heuristic.next_step(last_step, pos, next_p) 
+        sim.cars[0].speed += dv * ACC * PHYSICS_DT
+        sim.cars[0].speed = clamp(sim.cars[0].speed, MIN_SPEED, MAX_SPEED)
+        sim.cars[0].rotation += dr * ROTATION_SPEED * PHYSICS_DT       
+        
+        simulation_step(sim)
+        last_step = sim.cars[0].pos - pos
+
+        if sim.cars[0].dead {
+            break
+        }
+    }
+} 
+
+
+heuristic_visual_simulation :: proc(sim : ^Simulation(1, $M)) {
+    rl.InitWindow(1920, 1080, "projekt")
+    rl.SetTargetFPS(300)
+
+    gameTime : f32 = 0.0
+    physicsTime : f32 = 0.0
+    last_step: rl.Vector2
+    for !rl.WindowShouldClose() {
+        dt := rl.GetFrameTime()
+        
+        gameTime += dt
+        if dt > 0.25 {
+            dt = 0.25
+        }
+
+        for physicsTime < gameTime && physicsTime < SIM_DURATION {
+            physicsTime += PHYSICS_DT
+            // user_input(sim)
+            pos := sim.cars[0].pos
+            next_p := sim.track.points[(sim.cars[0].p_now+1)%M]
+
+            ray, _, _ := raycast_sensors_base(sim.cars[0], sim.track, sim.track_in, sim.track_out, 0)
+        
+            dv, dr := heuristic.next_step(last_step, pos, next_p, ray)     
+            sim.cars[0].speed += dv * ACC * PHYSICS_DT
+            sim.cars[0].speed = clamp(sim.cars[0].speed, MIN_SPEED, MAX_SPEED)
+            sim.cars[0].rotation += dr * ROTATION_SPEED * PHYSICS_DT       
+
+            simulation_step(sim)
+            last_step = sim.cars[0].pos - pos             
+        }
+
+        if physicsTime >= SIM_DURATION {
+            break
+        }
+
+        rl.BeginDrawing()
+        rl.ClearBackground(rl.WHITE)
+        simulation_draw(sim)
+        rl.EndDrawing()
+    }
+    rl.CloseWindow()
 }
