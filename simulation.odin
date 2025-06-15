@@ -18,29 +18,9 @@ mark_dead :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map(K)) {
     }
 }
 
-simulation_simple :: proc() -> Simulation(1, MAP_SIZE) {
-    p0 := MAP_USED.points[0]
-    p1 := MAP_USED.points[1]
-    rot := rl.Vector2Angle(rl.Vector2{1, 0}, p1 - p0) * rl.RAD2DEG
-    
-    return Simulation(1, MAP_SIZE){
-        [1]Car{
-            Car{
-                MAP_USED.points[0],
-                MIN_SPEED,
-                rot,
-                false,
-                false,
-                0
-            }
-        },
-        MAP_USED
-    }
-}
-
 simulation_on_map :: proc(track : Map($N)) -> Simulation(1, N) {
-    p0 := MAP_USED.points[0]
-    p1 := MAP_USED.points[1]
+    p0 := track.points[0]
+    p1 := track.points[1]
     rot := rl.Vector2Angle(rl.Vector2{1, 0}, p1 - p0) * rl.RAD2DEG
 
     return Simulation(1, N){

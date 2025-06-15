@@ -26,7 +26,7 @@ score :: proc(car : learning.Neural($N), vis : bool = false, sim : ^Simulation($
     ans = max(ans, 0)
         if sim.cars[0].dead {
         //     ans /= 2
-            ans -= 4
+            ans -= 1
         }
     return ans
 }
@@ -54,7 +54,7 @@ learn :: proc(
     steps: u32 = 100,
     show_mod : int = 1,
     mut_rate: f64 = 0.2,
-    net_size: [$N]u32 = [4]u32{6,6,6,2}
+    net_size: [$N]u32 = NEURAL_SHAPE
 ) {
     CHILD_REROLL :: CARS - CHILD_AVG - CHILD_MUT - LEAVE_OUT
     REROLL_L :: 0
@@ -68,8 +68,8 @@ learn :: proc(
     assert(LEAVE_R == CARS)
     
     cars : [CARS]Car_Score(N)
-    sim := simulation_simple()
-    sim_base := simulation_simple()
+    sim := simulation_on_map(TRAINING_MAP)
+    sim_base := simulation_on_map(TRAINING_MAP)
     track_in, track_out := track_in_out(sim.track)
 
     car_score_len :: proc(it : sort.Interface) -> int {
@@ -137,7 +137,7 @@ learn :: proc(
     }
     sim.cars = sim_base.cars
 
-    sim2 := simulation_on_map(INFINITY_MAP)
+    sim2 := simulation_on_map(TEST_MAP)
     track_in2, track_out2 := track_in_out(sim2.track)
     // score(cars[CARS - 1].neural, true, &sim2, track_in2, track_out2)
     visual_simulation(&sim2, cars[CARS - 1].neural, track_in2, track_out2, true)

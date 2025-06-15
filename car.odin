@@ -96,18 +96,30 @@ car_on_track :: proc(car : Car, track_in, track_out : Map($N)) -> bool {
 car_logic :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), track_in, track_out : Map(K)) {
     for i in 0..<N {
         rays, _, _ := raycast_sensors(sim.cars[i], sim.track, track_in, track_out)
-        input : [RAY_COUNT + 1]f64
+        
+        when COMPASS {
+            input : [RAY_COUNT + 7]f64
+            p_now := sim.cars[i].p_now + 1
+            vec := sim.track.points[p_now % len(sim.track.points)] - sim.cars[i].pos
+            angle := sim.cars[i].rotation * rl.DEG2RAD
+            dir := rl.Vector2Rotate(rl.Vector2{1, 0}, angle)
+            
+            input[RAY_COUNT + 1] = f64(vec.x) / 2000
+            input[RAY_COUNT + 2] = f64(vec.y) / 2000
+            input[RAY_COUNT + 3] = f64(sim.cars[i].pos.x) / 2000
+            input[RAY_COUNT + 4] = f64(sim.cars[i].pos.y) / 2000
+            input[RAY_COUNT + 5] = f64(dir.x)
+            input[RAY_COUNT + 6] = f64(dir.y)
+        } else {
+            input : [RAY_COUNT + 1]f64
+        }
         for j in 0..<RAY_COUNT {
             input[j] = rays[j]
         }
         input[RAY_COUNT] = f64(sim.cars[i].speed) / f64(MAX_SPEED)
-        
-        // input *= 2
-        // input -= 1
+
 
         dv, dr := learning.compute(logic, input[:])
-        // dv = 2 * dv - 1
-        // dr = 2 * dr - 1
         
         sim.cars[i].speed += dv * ACC * PHYSICS_DT
         sim.cars[i].speed = clamp(sim.cars[i].speed, MIN_SPEED, MAX_SPEED)
