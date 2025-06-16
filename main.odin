@@ -14,7 +14,7 @@ main :: proc() {
         CHILD_AVG = 300,
         CHILD_MUT = 400,
         LEAVE_OUT = 50, 
-        steps = 100,
+        steps = 20,
         show_mod = 10,
         mut_rate = 0.1,
         

@@ -134,10 +134,11 @@ learn :: proc(
         if rl.IsKeyPressed(rl.KeyboardKey.SPACE) {
             break
         }
+        fmt.printfln("{} / {}", i + 1, steps)
     }
     sim.cars = sim_base.cars
 
-    sim2 := simulation_race_on_map(INFINITY_MAP)
+    sim2 := simulation_race_on_map(TEST_MAP)
     track_in2, track_out2 := track_in_out(sim2.track)
     // score(cars[CARS - 1].neural, true, &sim2, track_in2, track_out2)
     // visual_simulation(&sim2, cars[CARS - 1].neural, track_in2, track_out2, true)
