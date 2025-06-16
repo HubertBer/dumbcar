@@ -95,7 +95,11 @@ visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)
 
         if physicsTime >= SIM_DURATION && !infinite{
             break
-        } 
+        }
+
+        if sim.cars[0].dead {
+            break
+        }
 
         rl.BeginDrawing()
         rl.ClearBackground(rl.WHITE)
@@ -107,9 +111,9 @@ visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)
 
 simulation_draw :: proc(sim : ^Simulation($N, $K), track_in, track_out : Map($M)) {
     for i in 1..=M {
-        out0 := track_out.points[i - 1 % M]
+        out0 := track_out.points[(i - 1) % M]
         out1 := track_out.points[i % M]
-        in0 := track_in.points[i - 1 % M]
+        in0 := track_in.points[(i - 1) % M]
         in1 := track_in.points[i % M]
 
         
