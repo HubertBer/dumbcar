@@ -214,7 +214,7 @@ heuristic_simulation :: proc(sim: ^Simulation(1, $M)) {
 } 
 
 heuristic_visual_simulation :: proc(sim : ^Simulation(1, $M)) {
-    rl.InitWindow(1920, 1080, "projekt")
+    rl.InitWindow(2560, 1440, "projekt")
     rl.SetTargetFPS(300)
 
     gameTime : f32 = 0.0
@@ -258,7 +258,7 @@ heuristic_visual_simulation :: proc(sim : ^Simulation(1, $M)) {
 }
 
 visual_comparing_simulation :: proc(sim : ^Simulation(2, $M), logic : learning.Neural($K), infinite := false) {
-    rl.InitWindow(1920, 1080, "projekt")
+    rl.InitWindow(2560, 1440, "projekt")
     rl.SetTargetFPS(300)
 
     gameTime : f32 = 0.0
