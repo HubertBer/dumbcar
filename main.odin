@@ -81,9 +81,9 @@ main :: proc() {
         CHILD_AVG = 300,
         CHILD_MUT = 400,
         LEAVE_OUT = 50, 
-        steps = 50,
-        show_mod = 5,
-        mut_rate = 2.5,
+        steps = 100,
+        show_mod = 10,
+        mut_rate = 0.1,
         
     )
     // outside_test()

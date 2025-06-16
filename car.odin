@@ -65,9 +65,19 @@ car_on_track :: proc(car : Car, track_in, track_out : Map($N)) -> bool {
         track_out.points[(i + 2) % M],
         track_out.points[(i + 1) % M],
     }
+    poly3 := [6]rl.Vector2{
+        track_in.points[(i - 3 + M) % M],
+        track_in.points[(i - 2 + M) % M],
+        track_in.points[(i - 1 + M) % M],
+        track_out.points[(i - 1 + M) % M],
+        track_out.points[(i - 2 + M) % M],
+        track_out.points[(i - 3 + M) % M],
+    }
 
     return rl.CheckCollisionPointPoly(car.pos, &poly[0], 6) || 
-        rl.CheckCollisionPointPoly(car.pos, &poly2[0], 6)
+        rl.CheckCollisionPointPoly(car.pos, &poly2[0], 6) ||
+        rl.CheckCollisionPointPoly(car.pos, &poly3[0], 6)
+
 }
 
 // car_on_track :: proc(car : Car, track : Map($N)) -> bool {
@@ -96,18 +106,46 @@ car_on_track :: proc(car : Car, track_in, track_out : Map($N)) -> bool {
 car_logic :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M), track_in, track_out : Map(K)) {
     for i in 0..<N {
         rays, _, _ := raycast_sensors(sim.cars[i], sim.track, track_in, track_out)
-        input : [RAY_COUNT + 1]f64
-        for j in 0..<RAY_COUNT {
-            input[j] = rays[j]
-        }
-        input[RAY_COUNT] = f64(sim.cars[i].speed) / f64(MAX_SPEED)
         
-        // input *= 2
-        // input -= 1
+        when LEARN_ONE_MAP {
+            input : [2]f64
+            car_pos := sim.cars[i].pos
+            input.x = f64(car_pos.x)
+            input.y = f64(car_pos.y)
+
+        } else when COMPASS {
+            input : [RAY_COUNT + 7]f64
+            p_now := sim.cars[i].p_now + 1
+            vec := sim.track.points[p_now % len(sim.track.points)] - sim.cars[i].pos
+            angle := sim.cars[i].rotation * rl.DEG2RAD
+            dir := rl.Vector2Rotate(rl.Vector2{1, 0}, angle)
+            
+            next_point := sim.track.points[p_now % len(sim.track.points)]
+            car_pos := sim.cars[i].pos
+
+            dif_angle := rl.Vector2Angle(dir, next_point - car_pos)
+            input[RAY_COUNT + 1] = f64(dif_angle)
+            // input[RAY_COUNT + 1] = f64(vec.x) / MAX_SPEED
+            // input[RAY_COUNT + 2] = f64(vec.y) / MAX_SPEED
+            // input[RAY_COUNT + 3] = f64(sim.cars[i].pos.x) / 2000
+            // input[RAY_COUNT + 4] = f64(sim.cars[i].pos.y) / 2000
+            // input[RAY_COUNT + 5] = f64(dir.x)
+            // input[RAY_COUNT + 6] = f64(dir.y)
+            // input[RAY_COUNT + 3] = f64(dir.x)
+            // input[RAY_COUNT + 4] = f64(dir.y)
+        } else {
+            input : [RAY_COUNT + 1]f64
+        }
+
+        when !LEARN_ONE_MAP{
+            for j in 0..<RAY_COUNT {
+                input[j] = rays[j]
+            }
+            input[RAY_COUNT] = f64(sim.cars[i].speed) / f64(MAX_SPEED)
+        }
+
 
         dv, dr := learning.compute(logic, input[:])
-        // dv = 2 * dv - 1
-        // dr = 2 * dr - 1
         
         sim.cars[i].speed += dv * ACC * PHYSICS_DT
         sim.cars[i].speed = clamp(sim.cars[i].speed, MIN_SPEED, MAX_SPEED)
