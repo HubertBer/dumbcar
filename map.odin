@@ -114,6 +114,28 @@ INFINITY_MAP :: Map(INFINITY_MAP_SIZE){
     }
 }
 
+SKRYG_MAP_SIZE :: 16
+SKRYG_MAP :: Map(SKRYG_MAP_SIZE) {
+    {
+        { 157 , 323 },
+        { 156 , 376 },
+        { 231 , 387 },
+        { 247 , 312 },
+        { 307 , 310 },
+        { 326 , 358 },
+        { 337 , 461 },
+        { 158 , 464 },
+        { 162 , 546 },
+        { 433 , 541 },
+        { 391 , 293 },
+        { 463 , 293 },
+        { 500 , 523 },
+        { 585 , 534 },
+        { 549 , 219 },
+        { 160 , 233 },
+    }
+}
+
 NURBURGRING_SIZE :: 20
 NURBURGRING :: Map(NURBURGRING_SIZE){
     {

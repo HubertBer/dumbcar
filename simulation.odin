@@ -85,8 +85,8 @@ simulation_step :: proc(sim : ^Simulation($N, $K)) {
             continue
         }
 
-        next_p := (car.p_now + 1) % len(sim.track.points)
-        dist := rl.Vector2Length(car.pos - sim.track.points[next_p])
+        next_p := (car.p_now + 1)
+        dist := rl.Vector2Length(car.pos - sim.track.points[next_p  % len(sim.track.points)])
         if dist <= TRACK_WIDTH {
             car.p_now = next_p
         }

@@ -6,7 +6,7 @@ import "core:math"
 import "core:math/rand"
 import rl "vendor:raylib"
 
-score :: proc(car : learning.Neural($N), vis : bool = false, sim : ^Simulation($M, $K), track_in, track_out : Map(K)) -> f64 {
+score :: proc(car : learning.Neural($N), vis : bool = false, sim : ^Simulation($M, $K)) -> f64 {
     if vis {
         visual_simulation(sim, car)
     } else {
@@ -51,11 +51,11 @@ learn :: proc(
     $CHILD_AVG: int,
     $CHILD_MUT: int,
     $LEAVE_OUT: int,
-    steps: u32 = 100,
+    $STEPS: int,
     show_mod : int = 1,
     mut_rate: f64 = 0.2,
     net_size: [$N]u32 = NEURAL_SHAPE
-) {
+) -> (train_scores, test_scores :[STEPS]f64) {
     CHILD_REROLL :: CARS - CHILD_AVG - CHILD_MUT - LEAVE_OUT
     REROLL_L :: 0
     REROLL_R :: CHILD_REROLL
@@ -70,46 +70,54 @@ learn :: proc(
     cars : [CARS]Car_Score(N)
     sim := simulation_on_map(TRAINING_MAP)
     sim_base := simulation_on_map(TRAINING_MAP)
-    track_in, track_out := track_in_out(sim.track)
+    sim_test_base := simulation_on_map(TEST_MAP)
+    sim_test := simulation_on_map(TEST_MAP)
 
+    track_in, track_out := track_in_out(sim.track)
+    
     car_score_len :: proc(it : sort.Interface) -> int {
         return int(CARS)
     }
-
+    
     car_score_less :: proc(it : sort.Interface, i, j : int) -> bool {
         cs := ([^]Car_Score(N))(it.collection)
         return cs[i].score < cs[j].score
     }
-
+    
     car_score_swap :: proc(it : sort.Interface, i, j : int) {
         cs := ([^]Car_Score(N))(it.collection)
         ci := cs[i]
         cs[i] = cs[j]
         cs[j] = ci
     }
-
+    
     for i in 0..<CARS {
         cars[i].neural = learning.make_neural(net_size)
         learning.random_weights(&cars[i].neural)
     }
     
-
-    for i in 0..<steps {
+    
+    for i in 0..<STEPS {
         rand.shuffle(cars[:])
         for car, i in cars {
             sim.cars = sim_base.cars
-            cars[i].score = score(car.neural, sim = &sim, track_in = track_in, track_out = track_out)
+            cars[i].score = score(car.neural, sim = &sim)
         }
-
+        
         sort.sort(sort.Interface{
             car_score_len,
             car_score_less,
             car_score_swap,
             &cars
         })
+        train_scores[i] = cars[CARS-1].score
 
+        sim_test.cars = sim_test_base.cars
+        test_scores[i] = score(cars[CARS-1].neural, sim = &sim_test)
+        
+        
         // !!! GENETICS !!!
-
+        
         for i in REROLL_L..<REROLL_R {
             learning.random_weights(&cars[i].neural)
         }
@@ -128,19 +136,20 @@ learn :: proc(
         }
         if int(i) % show_mod == 0 {
             sim.cars = sim_base.cars
-            score(cars[CARS - 1].neural, false, &sim, track_in, track_out)
+            score(cars[CARS - 1].neural, false, &sim)
         }
-
+        
         if rl.IsKeyPressed(rl.KeyboardKey.SPACE) {
             break
         }
-        fmt.printfln("{} / {}", i + 1, steps)
+        fmt.printfln("{} / {}: TRAIN: {}, TEST: {}", i + 1, STEPS, train_scores[i], test_scores[i])
+
     }
     sim.cars = sim_base.cars
-
     sim2 := simulation_race_on_map(TEST_MAP)
-    track_in2, track_out2 := track_in_out(sim2.track)
-    // score(cars[CARS - 1].neural, true, &sim2, track_in2, track_out2)
+    
+    // score(cars[CARS - 1].neural, true, &sim2)
     // visual_simulation(&sim2, cars[CARS - 1].neural, track_in2, track_out2, true)
-    visual_comparing_simulation(&sim2, cars[CARS - 1].neural, true)
+    visual_comparing_simulation(&sim2, cars[CARS - 1].neural, false)
+    return
 }
