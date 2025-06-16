@@ -21,32 +21,9 @@ mark_dead :: proc(sim : ^Simulation($N, $K)) {
     }
 }
 
-simulation_simple :: proc() -> Simulation(1, MAP_SIZE) {
-    p0 := MAP_USED.points[0]
-    p1 := MAP_USED.points[1]
-    rot := rl.Vector2Angle(rl.Vector2{1, 0}, p1 - p0) * rl.RAD2DEG
-    track_in, track_out := track_in_out(MAP_USED)
-    
-    return Simulation(1, MAP_SIZE){
-        [1]Car{
-            Car{
-                MAP_USED.points[0],
-                MIN_SPEED,
-                rot,
-                false,
-                false,
-                0
-            }
-        },
-        MAP_USED,
-        track_in,
-        track_out
-    }
-}
-
 simulation_on_map :: proc(track : Map($N)) -> Simulation(1, N) {
-    p0 := MAP_USED.points[0]
-    p1 := MAP_USED.points[1]
+    p0 := track.points[0]
+    p1 := track.points[1]
     rot := rl.Vector2Angle(rl.Vector2{1, 0}, p1 - p0) * rl.RAD2DEG
 
     track_in, track_out := track_in_out(track)
@@ -69,8 +46,8 @@ simulation_on_map :: proc(track : Map($N)) -> Simulation(1, N) {
 }
 
 simulation_race_on_map :: proc(track : Map($N)) -> Simulation(2, N) {
-    p0 := MAP_USED.points[0]
-    p1 := MAP_USED.points[1]
+    p0 := track.points[0]
+    p1 := track.points[1]
     rot := rl.Vector2Angle(rl.Vector2{1, 0}, p1 - p0) * rl.RAD2DEG
 
     track_in, track_out := track_in_out(track)
@@ -159,7 +136,11 @@ visual_simulation :: proc(sim : ^Simulation($N, $K), logic : learning.Neural($M)
 
         if physicsTime >= SIM_DURATION && !infinite{
             break
-        } 
+        }
+
+        if sim.cars[0].dead {
+            break
+        }
 
         rl.BeginDrawing()
         rl.ClearBackground(rl.WHITE)
