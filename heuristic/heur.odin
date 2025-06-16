@@ -48,7 +48,7 @@ next_step :: proc(
     acc := cos
     length := vlen(last_move)
 
-    fmt.printfln("Ray: {}, length: {} ", ray, length)
+    // fmt.printfln("Ray: {}, length: {} ", ray, length)
     // acc *= 20
     // acc -= 19
     // acc /= 2
