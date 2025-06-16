@@ -8,7 +8,8 @@ import "core:fmt"
 next_step :: proc(
     last_move: rl.Vector2,
     currwa_point: rl.Vector2,
-    dest_point: rl.Vector2
+    dest_point: rl.Vector2,
+    ray: f64
     ) -> (f32, f32) {
     
     to_point := dest_point - currwa_point
@@ -45,16 +46,23 @@ next_step :: proc(
     }
     
     acc := cos
-    acc *= 20
-    acc -= 19
-    acc /= 2
+    length := vlen(last_move)
+
+    fmt.printfln("Ray: {}, length: {} ", ray, length)
+    // acc *= 20
+    // acc -= 19
+    // acc /= 2
+    // acc = clamp(acc, -1, 1)
+
+    acc -= (math.exp((f32(ray))*length/3) -1.00)
     acc = clamp(acc, -1, 1)
+
 
     rotation := math.sign(sin) if cos < 0 else sin
 
-    fmt.printfln("Sine: {}", sin)
-    fmt.printfln("Cosine: {}", cos)
-    fmt.printfln("Acc: {}", acc)
+    // fmt.printfln("Sine: {}", sin)
+    // fmt.printfln("Cosine: {}", cos)
+    // fmt.printfln("Acc: {}", acc)
 
     return acc, rotation
 }

@@ -8,9 +8,9 @@ import rl "vendor:raylib"
 
 score :: proc(car : learning.Neural($N), vis : bool = false, sim : ^Simulation($M, $K), track_in, track_out : Map(K)) -> f64 {
     if vis {
-        visual_simulation(sim, car, track_in, track_out)
+        visual_simulation(sim, car)
     } else {
-        fast_simulation(sim, car, track_in, track_out)
+        fast_simulation(sim, car)
     }
 
     mod := len(sim.track.points)
@@ -128,7 +128,7 @@ learn :: proc(
         }
         if int(i) % show_mod == 0 {
             sim.cars = sim_base.cars
-            score(cars[CARS - 1].neural, true, &sim, track_in, track_out)
+            score(cars[CARS - 1].neural, false, &sim, track_in, track_out)
         }
 
         if rl.IsKeyPressed(rl.KeyboardKey.SPACE) {
@@ -137,8 +137,9 @@ learn :: proc(
     }
     sim.cars = sim_base.cars
 
-    sim2 := simulation_on_map(TEST_MAP)
+    sim2 := simulation_race_on_map(INFINITY_MAP)
     track_in2, track_out2 := track_in_out(sim2.track)
     // score(cars[CARS - 1].neural, true, &sim2, track_in2, track_out2)
-    visual_simulation(&sim2, cars[CARS - 1].neural, track_in2, track_out2, true)
+    // visual_simulation(&sim2, cars[CARS - 1].neural, track_in2, track_out2, true)
+    visual_comparing_simulation(&sim2, cars[CARS - 1].neural, true)
 }
