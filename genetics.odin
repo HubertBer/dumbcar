@@ -70,13 +70,15 @@ learn :: proc(
     cars : [CARS]Car_Score(N)
     sim := simulation_on_map(TRAINING_MAP)
     sim_base := simulation_on_map(TRAINING_MAP)
-    sim2 := simulation_race_on_map(TEST_MAP)
+    sim_test_base := simulation_on_map(TEST_MAP)
+    sim_test := simulation_on_map(TEST_MAP)
+
     track_in, track_out := track_in_out(sim.track)
     
     car_score_len :: proc(it : sort.Interface) -> int {
         return int(CARS)
     }
-
+    
     car_score_less :: proc(it : sort.Interface, i, j : int) -> bool {
         cs := ([^]Car_Score(N))(it.collection)
         return cs[i].score < cs[j].score
@@ -94,14 +96,14 @@ learn :: proc(
         learning.random_weights(&cars[i].neural)
     }
     
-
+    
     for i in 0..<STEPS {
         rand.shuffle(cars[:])
         for car, i in cars {
             sim.cars = sim_base.cars
             cars[i].score = score(car.neural, sim = &sim)
         }
-
+        
         sort.sort(sort.Interface{
             car_score_len,
             car_score_less,
@@ -109,11 +111,13 @@ learn :: proc(
             &cars
         })
         train_scores[i] = cars[CARS-1].score
-        test_scores[i] = score(cars[CARS-1].neural, sim = &sim2)
 
-
+        sim_test.cars = sim_test_base.cars
+        test_scores[i] = score(cars[CARS-1].neural, sim = &sim_test)
+        
+        
         // !!! GENETICS !!!
-
+        
         for i in REROLL_L..<REROLL_R {
             learning.random_weights(&cars[i].neural)
         }
@@ -134,14 +138,15 @@ learn :: proc(
             sim.cars = sim_base.cars
             score(cars[CARS - 1].neural, false, &sim)
         }
-
+        
         if rl.IsKeyPressed(rl.KeyboardKey.SPACE) {
             break
         }
         fmt.printfln("{} / {}", i + 1, STEPS)
     }
     sim.cars = sim_base.cars
-
+    sim2 := simulation_race_on_map(TEST_MAP)
+    
     // score(cars[CARS - 1].neural, true, &sim2)
     // visual_simulation(&sim2, cars[CARS - 1].neural, track_in2, track_out2, true)
     visual_comparing_simulation(&sim2, cars[CARS - 1].neural, true)

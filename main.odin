@@ -10,11 +10,11 @@ import "core:math/rand"
 
 main :: proc() {
     train_scores, test_scores := learn(
-        CARS = 1000,
-        CHILD_AVG = 300,
-        CHILD_MUT = 400,
-        LEAVE_OUT = 50, 
-        STEPS = 20,
+        CARS = 400,
+        CHILD_AVG = 75,
+        CHILD_MUT = 200,
+        LEAVE_OUT = 20, 
+        STEPS = 30,
         show_mod = 10,
         mut_rate = 0.1,
         
